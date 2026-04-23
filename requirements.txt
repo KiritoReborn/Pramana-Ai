@@ -1,0 +1,12 @@
+langchain
+langchain-community
+pydantic
+streamlit
+faiss-cpu
+sentence-transformers
+pdfplumber
+camelot-py[cv]
+pytesseract
+Pillow
+reportlab
+hypothesis
