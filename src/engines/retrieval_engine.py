@@ -2,9 +2,11 @@
 
 import faiss
 import numpy as np
+import pickle
+from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Optional
-from src.config import EmbeddingConfig, RetrievalConfig
+from src.config import EmbeddingConfig, RetrievalConfig, FilePaths
 from src.models.schemas import ExtractedDocument, EvidenceChunk
 
 
@@ -22,6 +24,11 @@ class RetrievalEngine:
         
         # Metadata mapping: index → document_id, page_number, text, source_file
         self.metadata: Dict[int, dict] = {}
+        
+        # Cache paths
+        self.cache_dir = FilePaths.CACHE_DIR
+        self.index_cache_path = self.cache_dir / "faiss_index.bin"
+        self.metadata_cache_path = self.cache_dir / "faiss_metadata.pkl"
         
     def add_documents(self, documents: List[ExtractedDocument]) -> None:
         """
@@ -143,3 +150,81 @@ class RetrievalEngine:
                 chunks.append(chunk)
         
         return chunks
+    
+    def save_to_disk(self, index_path: Optional[Path] = None, metadata_path: Optional[Path] = None) -> None:
+        """
+        Save FAISS index and metadata to disk for caching.
+        
+        Implements requirement 3.7: Cache embeddings to optimize demo performance.
+        Implements requirement 8.7: Pre-compute and cache embeddings.
+        
+        Args:
+            index_path: Path to save FAISS index (default: cache/faiss_index.bin)
+            metadata_path: Path to save metadata (default: cache/faiss_metadata.pkl)
+        """
+        # Use default paths if not provided
+        if index_path is None:
+            index_path = self.index_cache_path
+        if metadata_path is None:
+            metadata_path = self.metadata_cache_path
+        
+        # Ensure cache directory exists
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Save FAISS index
+        faiss.write_index(self.index, str(index_path))
+        
+        # Save metadata using pickle
+        with open(metadata_path, 'wb') as f:
+            pickle.dump(self.metadata, f)
+    
+    def load_from_disk(self, index_path: Optional[Path] = None, metadata_path: Optional[Path] = None) -> bool:
+        """
+        Load FAISS index and metadata from disk cache.
+        
+        Implements requirement 3.7: Cache embeddings to optimize demo performance.
+        Implements requirement 8.7: Pre-compute and cache embeddings.
+        
+        Args:
+            index_path: Path to load FAISS index from (default: cache/faiss_index.bin)
+            metadata_path: Path to load metadata from (default: cache/faiss_metadata.pkl)
+            
+        Returns:
+            True if successfully loaded, False if cache files don't exist
+        """
+        # Use default paths if not provided
+        if index_path is None:
+            index_path = self.index_cache_path
+        if metadata_path is None:
+            metadata_path = self.metadata_cache_path
+        
+        # Check if cache files exist
+        if not index_path.exists() or not metadata_path.exists():
+            return False
+        
+        try:
+            # Load FAISS index
+            self.index = faiss.read_index(str(index_path))
+            
+            # Load metadata
+            with open(metadata_path, 'rb') as f:
+                self.metadata = pickle.load(f)
+            
+            return True
+        except Exception as e:
+            # If loading fails, return False and keep empty index
+            print(f"Failed to load cache: {e}")
+            self.index = faiss.IndexFlatL2(self.dimension)
+            self.metadata = {}
+            return False
+    
+    def clear_cache(self) -> None:
+        """
+        Clear cached FAISS index and metadata from disk.
+        
+        Removes cache files if they exist.
+        """
+        if self.index_cache_path.exists():
+            self.index_cache_path.unlink()
+        if self.metadata_cache_path.exists():
+            self.metadata_cache_path.unlink()

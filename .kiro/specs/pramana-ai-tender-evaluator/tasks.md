@@ -103,7 +103,7 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
   - Verify Pydantic validation catches malformed outputs
   - Ensure all tests pass, ask the user if questions arise.
 
-- [~] 6. Implement retrieval system with FAISS
+- [x] 6. Implement retrieval system with FAISS
   - [x] 6.1 Create `src/engines/retrieval_engine.py`
     - Initialize sentence-transformers model (all-MiniLM-L6-v2)
     - Create FAISS IndexFlatL2 with dimension 384
@@ -126,7 +126,7 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - **Property 19: Embedding Cache Reuse**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.7**
   
-  - [~] 6.4 Implement embedding caching
+  - [x] 6.4 Implement embedding caching
     - Add cache for embeddings in session state
     - Implement save/load for FAISS index to disk
     - Pre-compute embeddings for demo documents
