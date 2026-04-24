@@ -17,6 +17,13 @@ class EligibilityCriterion(BaseModel):
     original_text: str = Field(description="Original text from document")
 
 
+class CriteriaList(BaseModel):
+    """List of extracted eligibility criteria from tender document"""
+    criteria: List[EligibilityCriterion] = Field(description="List of eligibility criteria")
+    extraction_failed: bool = Field(default=False, description="Flag indicating if extraction failed")
+    failure_reason: Optional[str] = Field(None, description="Reason for extraction failure")
+
+
 class ExtractedDocument(BaseModel):
     """Processed bidder document"""
     document_id: str

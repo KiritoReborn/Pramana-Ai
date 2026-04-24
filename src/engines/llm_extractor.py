@@ -155,6 +155,7 @@ class LLMExtractor:
         """
         from src.models.schemas import (
             EligibilityCriterion,
+            CriteriaList,
             FinancialEvidence,
             TechnicalEvidence,
             ComplianceEvidence,
@@ -162,7 +163,14 @@ class LLMExtractor:
         )
         
         # Return schema-specific safe defaults
-        if schema == EligibilityCriterion:
+        if schema == CriteriaList:
+            return schema(
+                criteria=[],
+                extraction_failed=True,
+                failure_reason="LLM extraction failed after maximum retries - manual review required"
+            )
+        
+        elif schema == EligibilityCriterion:
             return schema(
                 id="EXTRACTION_FAILED",
                 category="Documentation",
