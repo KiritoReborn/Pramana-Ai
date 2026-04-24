@@ -132,8 +132,8 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - Pre-compute embeddings for demo documents
     - _Requirements: 3.7, 8.7_
 
-- [~] 7. Implement evaluation engine
-  - [~] 7.1 Create `src/engines/evaluation_engine.py`
+- [x] 7. Implement evaluation engine
+  - [x] 7.1 Create `src/engines/evaluation_engine.py`
     - Implement `evaluate_bidder()` to orchestrate full evaluation
     - Implement `evaluate_criterion()` for single criterion evaluation
     - Call RetrievalEngine to get top 5 relevant chunks per criterion
