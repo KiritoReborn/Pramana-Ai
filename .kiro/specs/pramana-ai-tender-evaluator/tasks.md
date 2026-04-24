@@ -18,8 +18,8 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
   - **Property 17: Evidence Schema Validation**
   - **Validates: Requirements 1.3, 3.4, 9.1**
 
-- [ ] 2. Implement LLM extractor with Pydantic validation and retry logic
-  - [ ] 2.1 Create `src/engines/llm_extractor.py` with LLMExtractor class
+- [x] 2. Implement LLM extractor with Pydantic validation and retry logic
+  - [x] 2.1 Create `src/engines/llm_extractor.py` with LLMExtractor class
     - Implement Ollama client initialization with langchain-community
     - Implement `extract_with_validation()` method with PydanticOutputParser
     - Implement retry logic (max 3 attempts) with simplified prompts on validation failure
@@ -33,7 +33,7 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - **Property 44: Retry Exhaustion Fallback**
     - **Validates: Requirements 4.7, 9.3, 9.4**
   
-  - [ ] 2.3 Create prompt templates in `src/engines/prompts.py`
+  - [x] 2.3 Create prompt templates in `src/engines/prompts.py`
     - Define criteria extraction prompt template
     - Define evidence extraction prompts for each category (Financial, Technical, Compliance, Documentation)
     - Include format instructions placeholders for Pydantic schemas
