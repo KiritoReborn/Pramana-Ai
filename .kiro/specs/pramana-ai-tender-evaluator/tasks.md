@@ -112,7 +112,7 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - Store metadata mapping (index → document_id, page_number, text, source_file)
     - _Requirements: 3.1, 3.2_
   
-  - [~] 6.2 Implement retrieval query method
+  - [x] 6.2 Implement retrieval query method
     - Implement `retrieve()` method for top-k semantic search (k=5)
     - Convert L2 distances to confidence scores
     - Return EvidenceChunk Pydantic objects with metadata

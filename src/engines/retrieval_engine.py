@@ -63,6 +63,63 @@ class RetrievalEngine:
                         "source_file": doc.file_name
                     }
     
+    def retrieve(self, query: str, top_k: int = RetrievalConfig.TOP_K) -> List[EvidenceChunk]:
+        """
+        Retrieve top-k most relevant chunks for a query using semantic search.
+        
+        Converts L2 distances to confidence scores and returns EvidenceChunk objects.
+        Handles case where fewer than k chunks exist in the index.
+        
+        Args:
+            query: Query text for semantic search
+            top_k: Number of chunks to retrieve (default: 5)
+            
+        Returns:
+            List of EvidenceChunk objects with metadata and confidence scores
+        """
+        # Handle empty index
+        if self.index.ntotal == 0:
+            return []
+        
+        # Adjust k if index has fewer chunks than requested
+        actual_k = min(top_k, self.index.ntotal)
+        
+        # Create query embedding
+        query_embedding = self.embedding_model.encode([query])[0]
+        
+        # Search FAISS index
+        distances, indices = self.index.search(
+            np.array([query_embedding], dtype=np.float32),
+            actual_k
+        )
+        
+        # Convert results to EvidenceChunk objects
+        chunks = []
+        for dist, idx in zip(distances[0], indices[0]):
+            # Skip invalid indices (FAISS returns -1 for missing results)
+            if idx == -1:
+                continue
+            
+            # Get metadata for this chunk
+            meta = self.metadata[int(idx)]
+            
+            # Convert L2 distance to confidence score
+            # Using formula: confidence = 1 / (1 + distance)
+            # This maps distance 0 -> confidence 1.0, larger distances -> lower confidence
+            confidence = 1.0 / (1.0 + float(dist))
+            
+            # Create EvidenceChunk object
+            chunk = EvidenceChunk(
+                text=meta["text"],
+                document_id=meta["document_id"],
+                page_number=meta["page_number"],
+                confidence=confidence,
+                source_file=meta["source_file"]
+            )
+            chunks.append(chunk)
+        
+        return chunks
+    
     def _chunk_text(self, text: str, chunk_size: int = 512, overlap: int = 256) -> List[str]:
         """
         Split text into overlapping chunks.
