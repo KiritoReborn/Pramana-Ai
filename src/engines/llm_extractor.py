@@ -4,8 +4,8 @@ import logging
 from typing import Type, TypeVar, Optional, Any
 from pydantic import BaseModel, ValidationError
 from langchain_community.llms import Ollama
-from langchain.output_parsers import PydanticOutputParser
-from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
