@@ -39,8 +39,8 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - Include format instructions placeholders for Pydantic schemas
     - _Requirements: 1.3, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 3. Implement document processing pipeline
-  - [ ] 3.1 Create `src/processors/text_extractor.py` for PDF text extraction
+- [x] 3. Implement document processing pipeline
+  - [x] 3.1 Create `src/processors/text_extractor.py` for PDF text extraction
     - Implement pdfplumber-based text extraction with page preservation
     - Add error handling for corrupted PDFs
     - Return structured text with page metadata
@@ -50,7 +50,7 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - **Property 1: Text Extraction Preserves Content**
     - **Validates: Requirements 1.1**
   
-  - [ ] 3.3 Create `src/processors/table_extractor.py` for table extraction
+  - [x] 3.3 Create `src/processors/table_extractor.py` for table extraction
     - Implement camelot-py table extraction
     - Add fallback to text-only extraction on failure
     - Preserve table structure and page numbers
@@ -60,13 +60,13 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - **Property 2: Table Structure Preservation**
     - **Validates: Requirements 1.2**
   
-  - [ ] 3.5 Create `src/processors/ocr_engine.py` for OCR processing
+  - [x] 3.5 Create `src/processors/ocr_engine.py` for OCR processing
     - Implement Tesseract OCR for scanned PDFs and images
     - Calculate and return OCR confidence scores per page
     - Flag pages with confidence < 0.6 for manual review
     - _Requirements: 2.2, 2.6_
   
-  - [ ] 3.6 Create `src/processors/document_processor.py` as orchestrator
+  - [x] 3.6 Create `src/processors/document_processor.py` as orchestrator
     - Implement file type detection (.pdf, .png, .jpg, .jpeg)
     - Route to appropriate extraction method (pdfplumber vs OCR)
     - Return ExtractedDocument Pydantic objects

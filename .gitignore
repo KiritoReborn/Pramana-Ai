@@ -45,6 +45,9 @@ venv.bak/
 .coverage
 htmlcov/
 
+# Tests
+tests/
+
 # Hypothesis
 .hypothesis/
 
