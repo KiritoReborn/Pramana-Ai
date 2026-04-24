@@ -2,7 +2,7 @@
 
 import logging
 import json
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, List, Literal
 from datetime import datetime
 from pathlib import Path
 
@@ -464,3 +464,80 @@ class RuleEngine:
                 f.write(json.dumps(log_entry) + "\n")
         except Exception as e:
             logger.error(f"Failed to write decision to audit log: {str(e)}")
+
+    def compute_verdict(
+        self,
+        evaluations: List['CriterionEvaluation']
+    ) -> Literal["Eligible", "Not Eligible", "Needs Review"]:
+        """
+        Compute final verdict from criterion evaluations.
+
+        This method implements the deterministic logic for final eligibility determination:
+        1. If any mandatory criterion has verdict "Not Satisfied" → "Not Eligible"
+        2. If any mandatory criterion has verdict "Needs Review" → "Needs Review"
+        3. If all mandatory criteria have verdict "Satisfied" → "Eligible"
+
+        Optional criteria do not affect the final verdict.
+
+        Implements Requirements 5.5, 5.6
+
+        Args:
+            evaluations: List of CriterionEvaluation objects
+
+        Returns:
+            Final verdict: "Eligible", "Not Eligible", or "Needs Review"
+        """
+        logger.info(f"Computing final verdict from {len(evaluations)} criterion evaluations")
+
+        # Filter to only mandatory criteria
+        mandatory_evaluations = [
+            eval for eval in evaluations
+            if eval.criterion.priority == "Mandatory"
+        ]
+
+        if not mandatory_evaluations:
+            logger.warning("No mandatory criteria found. Defaulting to 'Needs Review'")
+            return "Needs Review"
+
+        # Check for any "Not Satisfied" mandatory criteria (Requirement 5.6)
+        not_satisfied_count = sum(
+            1 for eval in mandatory_evaluations
+            if eval.decision.verdict == "Not Satisfied"
+        )
+
+        if not_satisfied_count > 0:
+            logger.info(
+                f"Final verdict: Not Eligible ({not_satisfied_count} mandatory criteria not satisfied)"
+            )
+            return "Not Eligible"
+
+        # Check for any "Needs Review" mandatory criteria
+        needs_review_count = sum(
+            1 for eval in mandatory_evaluations
+            if eval.decision.verdict == "Needs Review"
+        )
+
+        if needs_review_count > 0:
+            logger.info(
+                f"Final verdict: Needs Review ({needs_review_count} mandatory criteria need review)"
+            )
+            return "Needs Review"
+
+        # All mandatory criteria satisfied (Requirement 5.5)
+        satisfied_count = sum(
+            1 for eval in mandatory_evaluations
+            if eval.decision.verdict == "Satisfied"
+        )
+
+        if satisfied_count == len(mandatory_evaluations):
+            logger.info(
+                f"Final verdict: Eligible (all {satisfied_count} mandatory criteria satisfied)"
+            )
+            return "Eligible"
+
+        # Fallback case (should not reach here if all verdicts are valid)
+        logger.warning(
+            "Unexpected verdict state. Defaulting to 'Needs Review' for safety."
+        )
+        return "Needs Review"
+
