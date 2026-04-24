@@ -97,14 +97,14 @@ This implementation plan follows the "AI extracts, Python decides" architecture.
     - **Property 7: Extraction Failure Handling**
     - **Validates: Requirements 1.4, 1.5, 1.6, 1.7**
 
-- [~] 5. Checkpoint - Ensure document processing works end-to-end
+- [x] 5. Checkpoint - Ensure document processing works end-to-end
   - Test tender PDF upload and criteria extraction
   - Test bidder document upload with various formats
   - Verify Pydantic validation catches malformed outputs
   - Ensure all tests pass, ask the user if questions arise.
 
 - [~] 6. Implement retrieval system with FAISS
-  - [~] 6.1 Create `src/engines/retrieval_engine.py`
+  - [x] 6.1 Create `src/engines/retrieval_engine.py`
     - Initialize sentence-transformers model (all-MiniLM-L6-v2)
     - Create FAISS IndexFlatL2 with dimension 384
     - Implement text chunking with 512 token chunks and 50% overlap
