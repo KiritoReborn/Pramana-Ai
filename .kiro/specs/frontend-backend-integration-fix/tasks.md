@@ -1,0 +1,148 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Frontend-Backend Communication Failure
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: For deterministic bugs, scope the property to the concrete failing case(s) to ensure reproducibility
+  - Test that frontend interactions (file upload, tender upload, evaluation trigger, review modal, override submission, report download) do NOT make API requests to backend
+  - Test implementation details from Bug Condition in design: isBugCondition(input) where input.type IN ['file_upload', 'button_click', 'navigation', 'form_submit'] AND input.requiresBackendData = true
+  - The test assertions should match the Expected Behavior Properties from design: apiRequestMade(result) AND backendDataFetched(result) AND uiUpdatedWithRealData(result)
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found to understand root cause:
+    - No API client exists in frontend
+    - No fetch() calls in frontend code
+    - No API endpoints exist in backend
+    - No FastAPI server implementation
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Existing Functionality Unchanged
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (pure UI interactions that don't require backend data)
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements:
+    - Font size controls (A-, A, A+) adjust font scale without API calls
+    - Language toggle switches between English/Kannada without API calls
+    - Role selection (Bidder/Officer) updates view state without API calls
+    - Sidebar navigation updates active view without API calls
+    - Toast notifications display without API calls
+    - Modal overlays open/close without API calls
+    - Streamlit app functions independently without breaking
+    - Backend processing classes produce same results when called directly
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
+
+- [x] 3. Fix for frontend-backend integration
+
+  - [x] 3.1 Create FastAPI server with REST endpoints
+    - Create src/api/server.py with FastAPI application
+    - Configure CORS middleware to allow frontend (http://localhost:3000) to make requests
+    - Implement POST /api/bidder/upload endpoint for bidder document uploads (multipart form data)
+    - Implement POST /api/tender/upload endpoint for tender document uploads
+    - Implement POST /api/evaluation/run endpoint to trigger evaluation workflow
+    - Implement GET /api/evaluation/results/{bidder_id} endpoint to retrieve evaluation results
+    - Implement GET /api/review/evidence/{bidder_id}/{criterion_id} endpoint to fetch evidence chunks
+    - Implement POST /api/review/override endpoint to submit manual overrides
+    - Implement GET /api/reports/generate/{bidder_id} endpoint to generate PDF reports
+    - Implement GET /api/reports/batch endpoint to generate multiple PDFs as ZIP
+    - Implement GET /api/health endpoint for health checks
+    - Implement session management using in-memory dictionary keyed by session_id
+    - Add error handling for all endpoints with proper HTTP status codes
+    - _Bug_Condition: isBugCondition(input) where input.type IN ['file_upload', 'button_click', 'navigation', 'form_submit'] AND input.requiresBackendData = true AND NOT apiRequestMade(input) AND NOT backendDataFetched(input)_
+    - _Expected_Behavior: apiRequestMade(result) AND backendDataFetched(result) AND uiUpdatedWithRealData(result) from design_
+    - _Preservation: Streamlit app and backend processing classes remain unchanged from design_
+    - _Requirements: 2.1, 2.2, 2.4, 2.5, 2.6, 2.7, 2.8, 2.10, 2.11, 2.12_
+
+  - [x] 3.2 Create API client in frontend
+    - Create frontend/lib/api.ts with API client functions
+    - Configure API base URL to http://localhost:8000
+    - Implement uploadBidderDocuments(files: File[], bidderId: string) function
+    - Implement uploadTenderDocument(file: File) function
+    - Implement runEvaluation(bidderIds: string[], criteria: any[]) function
+    - Implement getEvaluationResults(bidderId: string) function
+    - Implement getReviewEvidence(bidderId: string, criterionId: string) function
+    - Implement submitOverride(data: OverrideData) function
+    - Implement generateReport(bidderId: string) function
+    - Implement generateBatchReports(bidderIds: string[]) function
+    - Add error handling with try-catch for all API calls
+    - Add TypeScript types for request/response payloads
+    - _Bug_Condition: isBugCondition(input) from design_
+    - _Expected_Behavior: expectedBehavior(result) from design_
+    - _Preservation: Frontend UI styling and pure UI interactions remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
+
+  - [x] 3.3 Integrate API calls into frontend UI
+    - Replace mock file upload logic in frontend/app/page.tsx with uploadBidderDocuments() API call
+    - Replace mock tender upload logic with uploadTenderDocument() API call
+    - Replace mock evaluation trigger with runEvaluation() API call
+    - Replace mock review modal data with getReviewEvidence() API call
+    - Replace mock override submission with submitOverride() API call
+    - Replace mock report download with generateReport() API call
+    - Add loading states (spinners/progress indicators) during API calls
+    - Add error handling to display API errors in toast notifications
+    - Update state management to use real data from API responses
+    - _Bug_Condition: isBugCondition(input) from design_
+    - _Expected_Behavior: expectedBehavior(result) from design_
+    - _Preservation: Font controls, language toggle, role selection, navigation remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
+
+  - [x] 3.4 Add dependencies and configuration
+    - Add fastapi>=0.104.0 to requirements.txt
+    - Add uvicorn[standard]>=0.24.0 to requirements.txt
+    - Add python-multipart>=0.0.6 to requirements.txt
+    - Create startup script for running FastAPI server (python -m uvicorn src.api.server:app --reload --port 8000)
+    - Update README.md with instructions for running both frontend and backend servers
+    - _Bug_Condition: isBugCondition(input) from design_
+    - _Expected_Behavior: expectedBehavior(result) from design_
+    - _Preservation: Existing dependencies and Streamlit app remain functional_
+    - _Requirements: 2.10_
+
+  - [x] 3.5 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Frontend-Backend Communication Works
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify that frontend interactions now make API requests to backend
+    - Verify that backend processes requests and returns real data
+    - Verify that UI updates with real data from backend
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12_
+
+  - [x] 3.6 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Functionality Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Verify font size controls still work without API calls
+    - Verify language toggle still works without API calls
+    - Verify role selection still works without API calls
+    - Verify sidebar navigation still works without API calls
+    - Verify toast notifications still display correctly
+    - Verify modal overlays still open/close correctly
+    - Verify Streamlit app still functions independently
+    - Verify backend processing classes produce same results
+    - Confirm all tests still pass after fix (no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
+
+- [-] 4. Checkpoint - Ensure all tests pass
+  - Run all bug condition tests and verify they pass (confirms fix works)
+  - Run all preservation tests and verify they pass (confirms no regressions)
+  - Test full bidder workflow: upload documents → view in submissions → wait for evaluation
+  - Test full officer workflow: upload tender → extract criteria → run evaluation → review cases → download reports
+  - Test concurrent access: multiple users uploading files simultaneously
+  - Test session isolation: different users see different data
+  - Test Streamlit app continues working while API server is running
+  - Test API server restart preserves no state (stateless except session data)
+  - Verify CORS allows frontend (localhost:3000) to call backend (localhost:8000)
+  - Verify file uploads work with multipart form data
+  - Verify PDF reports are generated correctly
+  - Verify audit logs are written correctly
+  - Ask the user if questions arise

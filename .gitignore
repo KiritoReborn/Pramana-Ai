@@ -37,6 +37,13 @@ venv.bak/
 *.swo
 *~
 
+# Kiro (keep specs but ignore other Kiro files)
+.kiro/settings/
+.kiro/skills/
+.kiro/steering/
+.kiro/hooks/
+!.kiro/specs/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -46,7 +53,11 @@ venv.bak/
 htmlcov/
 
 # Tests
-tests/
+tests/__pycache__/
+tests/*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Hypothesis
 .hypothesis/
@@ -77,3 +88,12 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+*CHECKPOINT*.md
+*_CHECKPOINT*.md
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local

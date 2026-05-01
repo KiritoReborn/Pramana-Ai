@@ -15,6 +15,20 @@ Pramana AI is an offline, explainable AI system that evaluates bidder submission
 
 ## 🏗️ Architecture
 
+The system provides two user interfaces:
+
+1. **Next.js Frontend + FastAPI Backend** (Modern Web Interface)
+   - Next.js frontend at `http://localhost:3000` provides a government e-procurement portal interface
+   - FastAPI backend at `http://localhost:8000` exposes REST API endpoints
+   - Suitable for production deployment with role-based access (Bidder/Officer)
+
+2. **Streamlit UI** (Legacy Interface)
+   - Streamlit app at `http://localhost:8501` provides a single-page demo interface
+   - Direct Python integration without API layer
+   - Suitable for quick demos and testing
+
+Both interfaces use the same backend processing components:
+
 ```
 ┌─────────────────┐
 │ Tender Document │
@@ -182,46 +196,164 @@ pip install -r requirements.txt
 ollama serve
 ```
 
-### Launch Streamlit UI
+### Option 1: Run with Next.js Frontend (Recommended)
+
+#### Start the FastAPI Backend Server
+
+**Linux/Mac:**
+```bash
+# Make the script executable (first time only)
+chmod +x start_backend.sh
+
+# Run the backend server
+./start_backend.sh
+```
+
+**Windows:**
+```bash
+start_backend.bat
+```
+
+**Or manually:**
+```bash
+python -m uvicorn src.api.server:app --reload --port 8000
+```
+
+The backend API will be available at `http://localhost:8000`
+API documentation at `http://localhost:8000/docs`
+
+#### Start the Next.js Frontend
+```bash
+# In a new terminal
+cd frontend
+npm install  # First time only
+npm run dev
+```
+
+The frontend application will open in your browser at `http://localhost:3000`
+
+### Option 2: Run with Streamlit UI (Legacy)
+
 ```bash
 streamlit run src/ui/app.py
 ```
 
-The application will open in your browser at `http://localhost:8501`
+The Streamlit application will open in your browser at `http://localhost:8501`
 
 ## 📖 Usage Guide
 
-### 1. Upload Tender Document
+### Using the Next.js Frontend
+
+#### 1. Select Your Role
+- Choose "Bidder" to upload documents and track submissions
+- Choose "Officer" to configure tenders, run evaluations, and review results
+
+#### 2. For Bidders: Upload Documents
+- Navigate to "Document Upload Portal"
+- Click "Choose Files" and select your documents (PDF, PNG, JPG, JPEG)
+- Click "Start Upload" to process documents
+- View upload status in "My Submissions"
+
+#### 3. For Officers: Configure Tender
+- Navigate to "Tender Configuration"
+- Click "Upload Master Document" and select tender PDF
+- System extracts eligibility criteria automatically
+- Review extracted criteria organized by category
+
+#### 4. For Officers: Run Evaluation
+- Navigate to "Evaluation Matrix"
+- View all bidders and their submission status
+- Click "Run Evaluation" to process all bidders
+- Wait for evaluation to complete (typically 60-90 seconds per bidder)
+
+#### 5. For Officers: Review Cases
+- In "Evaluation Matrix", identify bidders marked "Needs Review"
+- Click "Review Case" to see detailed evidence and confidence scores
+- Apply manual overrides with justification if needed
+- System automatically recalculates final verdict
+
+#### 6. For Officers: Download Reports
+- Navigate to "Final Reports"
+- Download individual PDF reports per bidder
+- Or download all reports as ZIP file
+- Reports include complete audit trail
+
+### Using the Streamlit UI (Legacy)
+
+#### 1. Upload Tender Document
 - Click "Upload tender PDF containing eligibility criteria"
 - Select your tender document (PDF format)
 - Click "Process Tender Document"
 - Review extracted criteria organized by category
 
-### 2. Add Bidder Documents
+#### 2. Add Bidder Documents
 - Enter bidder name
 - Upload bidder documents (PDF, PNG, JPG, JPEG)
 - Click "Add Bidder Documents"
 - Repeat for multiple bidders
 
-### 3. Run Evaluation
+#### 3. Run Evaluation
 - Select bidders to evaluate
 - Click "Run Evaluation"
 - Wait for processing (typically 60-90 seconds per bidder)
 - Review results with detailed evidence and confidence scores
 
-### 4. Human Review (Optional)
+#### 4. Human Review (Optional)
 - Switch to "Review Dashboard" tab
 - Review flagged evaluations with low confidence
 - Apply manual overrides with justification
 - System automatically recalculates final verdict
 
-### 5. Download Reports
+#### 5. Download Reports
 - Navigate to "Download Reports" section
 - Download individual PDF reports per bidder
 - Or download all reports as ZIP file
 - Reports include complete audit trail
 
 ## 🔧 Configuration
+
+### API Endpoints
+
+The FastAPI backend exposes the following REST endpoints:
+
+#### Health Check
+- `GET /api/health` - Check API status
+
+#### Bidder Operations
+- `POST /api/bidder/upload` - Upload bidder documents (multipart form data)
+  - Parameters: `files` (File[]), `bidder_id` (string), `session_id` (string)
+  - Returns: Processing status and document IDs
+
+#### Tender Operations
+- `POST /api/tender/upload` - Upload tender document
+  - Parameters: `file` (File), `session_id` (string)
+  - Returns: Extracted eligibility criteria
+
+#### Evaluation Operations
+- `POST /api/evaluation/run` - Trigger evaluation for bidders
+  - Body: `{ bidder_ids: string[], criteria: Criterion[], session_id: string }`
+  - Returns: Evaluation results
+- `GET /api/evaluation/results/{bidder_id}` - Get evaluation results
+  - Parameters: `bidder_id` (string), `session_id` (string)
+  - Returns: Detailed evaluation results
+
+#### Review Operations
+- `GET /api/review/evidence/{bidder_id}/{criterion_id}` - Get evidence for review
+  - Parameters: `bidder_id` (string), `criterion_id` (string), `session_id` (string)
+  - Returns: Evidence chunks with confidence scores
+- `POST /api/review/override` - Submit manual override
+  - Body: `{ bidder_id: string, criterion_id: string, verdict: string, justification: string, session_id: string }`
+  - Returns: Updated evaluation results
+
+#### Report Operations
+- `GET /api/reports/generate/{bidder_id}` - Generate PDF report
+  - Parameters: `bidder_id` (string), `session_id` (string)
+  - Returns: PDF file
+- `GET /api/reports/batch` - Generate batch reports as ZIP
+  - Parameters: `bidder_ids` (string[]), `session_id` (string)
+  - Returns: ZIP file
+
+API documentation is available at `http://localhost:8000/docs` (Swagger UI) when the server is running.
 
 ### LLM Settings
 Edit `src/config.py`:
@@ -330,7 +462,20 @@ pytest tests/test_checkpoint_task9.py -v
 
 ```
 .
+├── frontend/                       # Next.js frontend application
+│   ├── app/
+│   │   ├── page.tsx                # Main application page
+│   │   ├── layout.tsx              # Root layout
+│   │   └── globals.css             # Global styles
+│   ├── lib/
+│   │   └── api.ts                  # API client for backend
+│   ├── public/                     # Static assets
+│   ├── package.json                # Node dependencies
+│   └── next.config.js              # Next.js configuration
 ├── src/
+│   ├── api/
+│   │   ├── server.py               # FastAPI REST API server
+│   │   └── __init__.py
 │   ├── models/
 │   │   └── schemas.py              # Pydantic schemas
 │   ├── processors/
@@ -347,7 +492,7 @@ pytest tests/test_checkpoint_task9.py -v
 │   │   ├── rule_engine.py          # Deterministic decisions
 │   │   └── report_generator.py     # PDF report generation
 │   ├── ui/
-│   │   ├── app.py                  # Main Streamlit app
+│   │   ├── app.py                  # Streamlit app (legacy)
 │   │   └── review_dashboard.py     # Review dashboard
 │   ├── utils/
 │   │   └── precompute_embeddings.py # Embedding cache utility
